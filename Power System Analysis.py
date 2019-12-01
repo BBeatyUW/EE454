@@ -23,28 +23,6 @@ def import_BusAndLineData(BusData_Location, LineData_Location):
     LineData = pd.read_excel(LineData_Location[0], sheet_name=LineData_Location[1])
     return BusData, LineData
 
-"""
-Parses LineData data frame for use in a building admittance matrix
-Test function of data parsing
-Returns line_:
-    Num - number of lines
-    From - line origin
-    To - line destination
-    R - line resistance
-    X - line reactance
-    B - shunt capactiance
-    Fmax - maximum power for the line
-"""
-def parse_LineData(LineData):
-    col = np.array(LineData.columns)
-    line_From = np.array(LineData[col[0]])
-    line_To = np.array(LineData[col[1]])
-    line_R = np.array(LineData[col[2]])
-    line_X = np.array(LineData[col[3]])
-    line_B = np.array(LineData[col[4]])
-    line_Fmax = np.array(LineData[col[5]])
-    line_Num = line_From.size
-    return line_Num, line_From, line_To, line_R, line_X, line_B, line_Fmax
 
 """
 Builds G and B matrices to be used in Power Flow calculations
@@ -61,7 +39,7 @@ def build_AdmittanceMatrix(LineData, sys_Size):
     line_Y = 1/line_Z
     line_B = np.array(LineData[col[4]])
     line_Fmax = np.array(LineData[col[5]])
-    sys_Y = np.array([[0 for i in range(sys_Size)] for j in range(sys_Size)], dtype = complex)
+    sys_Y = np.array([[0 for j in range(sys_Size)] for i in range(sys_Size)], dtype = complex)
     sys_G = np.zeros((sys_Size, sys_Size))
     sys_B = np.zeros((sys_Size, sys_Size))
     
@@ -80,6 +58,18 @@ def build_AdmittanceMatrix(LineData, sys_Size):
     return sys_G, sys_B
 
 """
+
+"""
+def init_BusData(BusData):
+    col = np.array(BusData.columns)
+    sys_LoadP = np.array(BusData[col[1]])
+    sys_LoadQ = np.array(BusData[col[2]])
+    sys_Type = np.array(BusData[col[3]])
+    sys_P = np.array(BusData[col[4]])
+    sys_V = np.array(BusData[col[5]])
+    return sys_BusData
+
+"""
 ########################
     Main Section of Code 
 ########################    
@@ -96,10 +86,11 @@ LineData_Location = ['.\Sample System\system_SampleInput.xlsx', 'LineData']
 df_BusData, df_LineData = import_BusAndLineData(BusData_Location, LineData_Location)
 sys_G, sys_B = build_AdmittanceMatrix(df_LineData, df_BusData.shape[0])
 
+"""
 print(sys_G)
 print()
 print(sys_B)
-
+"""
 
 """
 Code for testing purposes
@@ -121,8 +112,10 @@ for i in range(df_BusData.shape[0]):
 #print(df_BusData)
 #print(ind.size)
 #print(build_AdmittanceMatrix(df_LineData))
-test = np.array([[0 for i in range(2)] for j in range(2)], dtype = complex)
-test[0][0]=1j
+
+test = np.array([[i for j in range(2)] for i in range(2)], dtype = complex)
+print(test)
+print(test[:,0])
 
 test1 = 0.5*np.ones((2,2))
 test2 = 1/test1
