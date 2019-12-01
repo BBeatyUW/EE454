@@ -91,7 +91,7 @@ def init_SysData(sys_LoadP, sys_LoadQ, sys_BusType, sys_PGen, sys_VRef):
     sys_Data = np.zeros((n,4))
     sys_Data[:,0] = sys_VRef.copy()
     sys_Data[:,1] = np.zeros(n)
-    """
+    
     for i in range(n):
         for j in range(n):
             if sys_BusType[i]=='G':
@@ -102,7 +102,7 @@ def init_SysData(sys_LoadP, sys_LoadQ, sys_BusType, sys_PGen, sys_VRef):
     """
     sys_Data[:,2] = -1*sys_LoadP[sys_BusType=='D']
     sys_Data[:,3] = -1*sys_LoadQ[sys_BusType=='D'] 
-           
+    """    
     return sys_Data
 
 """
@@ -158,18 +158,15 @@ def update_SysData(sys_Data, sys_G, sys_B, sys_BusType):
     
     """ Calculate Delta V's, Theta's, and update """
     
-    Delta = J_inv @ (np.append(sys_Data[1:n,2], sys_Data[1:n,3]))  
-    print(Delta)     
+    Delta = J_inv @ np.append(sys_Data[1:n,2], sys_Data[1:n,3])       
     for i in range((n-1)):
-        if sys_BusType[i]!='G':
-            sys_Data[i+1, 0] += Delta[i]
-        sys_Data[i+1, 1] += Delta[i+(n-1)]
+        sys_Data[i+1, 0] += Delta[i+(n-1)]
+        sys_Data[i+1, 1] += Delta[i]
         
     """ Update P,Q """
     for i in range(n):
         for j in range(n):
-            if sys_BusType[i]!='G':
-                sys_Data[i, 2] += sys_Data[i, 0]*sys_Data[j,0]*(sys_G[i,j]*np.cos(sys_Data[i,1]-sys_Data[j,1])+sys_B[i,j]*np.sin(sys_Data[i,1]-sys_Data[j,1]))
+            sys_Data[i, 2] += sys_Data[i, 0]*sys_Data[j,0]*(sys_G[i,j]*np.cos(sys_Data[i,1]-sys_Data[j,1])+sys_B[i,j]*np.sin(sys_Data[i,1]-sys_Data[j,1]))
             sys_Data[i, 3] += sys_Data[i, 0]*sys_Data[j,0]*(sys_G[i,j]*np.sin(sys_Data[i,1]-sys_Data[j,1])-sys_B[i,j]*np.cos(sys_Data[i,1]-sys_Data[j,1])) 
     
     return sys_Data
