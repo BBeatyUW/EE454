@@ -91,7 +91,7 @@ def init_SysData(sys_LoadP, sys_LoadQ, sys_BusType, sys_PGen, sys_VRef):
     sys_Data = np.zeros((n,4))
     sys_Data[:,0] = sys_VRef.copy()
     sys_Data[:,1] = np.zeros(n)
-    
+    """
     for i in range(n):
         for j in range(n):
             if sys_BusType[i]=='G':
@@ -102,7 +102,7 @@ def init_SysData(sys_LoadP, sys_LoadQ, sys_BusType, sys_PGen, sys_VRef):
     """
     sys_Data[:,2] = -1*sys_LoadP[sys_BusType=='D']
     sys_Data[:,3] = -1*sys_LoadQ[sys_BusType=='D'] 
-    """    
+       
     return sys_Data
 
 """
@@ -143,7 +143,7 @@ Takes in sys_Data, a 2D array containing each node's current information
 As well as, the systems G and B matrices, and node types
 Returns the updated array
 """
-def update_SysData(sys_Data, sys_G, sys_B, sys_BusType):
+def update_SysData(sys_Data, sys_G, sys_B, sys_BusType, sys_LoadP, sys_LoadQ):
     n=sys_Data.shape[0]
     """ Determine Jacobian """
     J = np.zeros((2*(n-1),2*(n-1)))
@@ -165,9 +165,12 @@ def update_SysData(sys_Data, sys_G, sys_B, sys_BusType):
         
     """ Update P,Q """
     for i in range(n):
+        sys_Data[i, 2] = -sys_LoadP[i]
+        sys_Data[i, 3] = -sys_LoadQ[i]
         for j in range(n):
             sys_Data[i, 2] += sys_Data[i, 0]*sys_Data[j,0]*(sys_G[i,j]*np.cos(sys_Data[i,1]-sys_Data[j,1])+sys_B[i,j]*np.sin(sys_Data[i,1]-sys_Data[j,1]))
             sys_Data[i, 3] += sys_Data[i, 0]*sys_Data[j,0]*(sys_G[i,j]*np.sin(sys_Data[i,1]-sys_Data[j,1])-sys_B[i,j]*np.cos(sys_Data[i,1]-sys_Data[j,1])) 
+        
     
     return sys_Data
 
@@ -203,7 +206,7 @@ convergence = [['Iteration', 'Max P Mismatch', 'P Bus', 'Max Q Mismatch', 'Q Bus
 while(mismatch>tolerance and iteration < 5):
     print([iteration, mismatch[0], nodes[sys_LoadP==mismatch_P+sys_Data[:,2]],\
                mismatch[1], nodes[sys_LoadQ==mismatch_Q+sys_Data[:,3]]])
-    update_SysData(sys_Data, sys_G, sys_B, sys_BusType)
+    update_SysData(sys_Data, sys_G, sys_B, sys_BusType, sys_LoadP, sys_LoadQ)
     mismatch_P = np.max(sys_LoadP-sys_Data[:,2])
     mismatch_Q = np.max(sys_LoadQ-sys_Data[:,3])
     mismatch = [abs(mismatch_P), abs(mismatch_Q)]
