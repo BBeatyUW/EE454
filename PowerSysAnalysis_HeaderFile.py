@@ -101,7 +101,7 @@ def init_SysData(sys_LoadP, sys_LoadQ, sys_BusType, sys_PGen, sys_VRef):
        
     return sys_Data
 
-"""
+"""<Updates intended cell. I believe these are the right equations to use>
 Determines Jacobian value for a given cell
 Takes in: i, j, n, V_i, V_j, T_i, T_j, P_i, Q_i, G_ij, B_ij
 Returns Jacobian cell value
@@ -129,7 +129,7 @@ def Jacobian_PowerFlow(i, j, n, V_i, V_j, T_i, T_j, P_i, Q_i, G_ij, B_ij):
             J = V_i*(G_ij*np.sin(T_i-T_j)-B_ij*np.cos(T_i-T_j))
     return J
 
-"""
+"""<I believe this is processing the jacobian and Deltas correctly. Not sure about the final updating though of P,Q>
 Processes 1 iteration of current system data
 Takes in sys_Data, a 2D array containing each node's current information
 [0] - Voltage (V)
