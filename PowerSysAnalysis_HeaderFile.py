@@ -92,54 +92,28 @@ Returns a 2D array containing each node's current information
 def init_SysData(sys_LoadP, sys_LoadQ, sys_BusType, sys_PGen, sys_VRef, sys_G, sys_B):
     n= sys_LoadP.size
     sys_Data = np.zeros((n,6))
-    sys_Data[:,0] = sys_VRef
-    sys_Data[:,1] = np.zeros(n)
-    sys_Data[:,2] = (sys_PGen-sys_LoadP)/100
-    #sys_Data[:,3] = sys_PGen-sys_LoadP
-    sys_Data[:,4] = (-sys_LoadQ)/100
-    #sys_Data[:,5] = -sys_LoadQ
-    
-    for i in range(n):
-        sys_Data[i,3] = sys_Data[i,2]
-        sys_Data[i,5] = sys_Data[i,4] 
+    sys_Data[:,0] = sys_VRef #Sets initial voltages to provided reference
+    sys_Data[:,1] = np.zeros(n) #Sets initial angles to zero
+    sys_Data[:,2] = (sys_PGen-sys_LoadP)/100 #Sets initial power inject to Bus generation minus load in per unit
+    sys_Data[:,4] = (-sys_LoadQ)/100 #Sets initial power inject to Bus generation minus load in per unit  
+    for i in range(n): #Sets initial mismatch to calculated power from (V,T) minus expected inject
+        sys_Data[i,3] = -sys_Data[i,2]
+        sys_Data[i,5] = -sys_Data[i,4] 
         for j in range(n):
-            sys_Data[i,3] -= sys_Data[i,0]*sys_Data[j,0]*\
+            sys_Data[i,3] += sys_Data[i,0]*sys_Data[j,0]*\
                             (sys_G[i,j]*np.cos(sys_Data[i,1]-sys_Data[j,1])+\
                              sys_B[i,j]*np.sin(sys_Data[i,1]-sys_Data[j,1]))
-            sys_Data[i,5] -= sys_Data[i,0]*sys_Data[j,0]*\
+            sys_Data[i,5] += sys_Data[i,0]*sys_Data[j,0]*\
                         (sys_G[i,j]*np.sin(sys_Data[i,1]-sys_Data[j,1])-\
                          sys_B[i,j]*np.cos(sys_Data[i,1]-sys_Data[j,1]))
        
     return sys_Data
 
-"""<Updates intended cell. I believe these are the right equations to use>
-Determines Jacobian value for a given cell
+"""
+Determines Jacobian value for a given J_11 cell (dP/dT)
 Takes in: i, j, n, V_i, V_j, T_i, T_j, P_i, Q_i, G_ij, B_ij
 Returns Jacobian cell value
 """
-def Jacobian_PowerFlow(i, j, n, V_i, V_j, T_i, T_j, P_i, Q_i, G_ij, B_ij):
-    if (i<n and j<n ): #J_11 dP/dT
-        if(i==j):
-            J = -Q_i-B_ij*(V_i**2)
-        else:
-            J =  V_i*V_j*(G_ij*np.sin(T_i-T_j)-B_ij*np.cos(T_i-T_j))
-    elif(i<n and j>=n ): #J_12 dP/dV
-        if(i==j):
-            J = (P_i/V_i) + G_ij*V_i
-        else:
-            J = V_i*(G_ij*np.cos(T_i-T_j)+B_ij*np.sin(T_i-T_j))
-    elif(i>=n and j<n ): #J_21 dQ/dT
-        if(i==j):
-            J = P_i-G_ij*(V_i**2)
-        else:
-            J = -V_i*V_j*(G_ij*np.cos(T_i-T_j)+B_ij*np.sin(T_i-T_j))
-    else: #(i>=n and j>= n) J_22 dQ/dV
-        if(i==j):
-            J = (Q_i/V_i)-B_ij*V_i
-        else:
-            J = V_i*(G_ij*np.sin(T_i-T_j)-B_ij*np.cos(T_i-T_j))
-    return J
-
 def Jacobian_PowerFlow_11(i, j, V_i, V_j, T_i, T_j, P_i, Q_i, G_ij, B_ij):
     if(i==j):
         J = -Q_i-B_ij*(V_i**2)
@@ -147,6 +121,11 @@ def Jacobian_PowerFlow_11(i, j, V_i, V_j, T_i, T_j, P_i, Q_i, G_ij, B_ij):
         J =  V_i*V_j*(G_ij*np.sin(T_i-T_j)-B_ij*np.cos(T_i-T_j))
     return J
 
+"""
+Determines Jacobian value for a given J_12 cell (dP/dV)
+Takes in: i, j, n, V_i, V_j, T_i, T_j, P_i, Q_i, G_ij, B_ij
+Returns Jacobian cell value
+"""
 def Jacobian_PowerFlow_12(i, j, V_i, V_j, T_i, T_j, P_i, Q_i, G_ij, B_ij):
     if(i==j):
         J = (P_i/V_i) + G_ij*V_i
@@ -154,6 +133,11 @@ def Jacobian_PowerFlow_12(i, j, V_i, V_j, T_i, T_j, P_i, Q_i, G_ij, B_ij):
         J = V_i*(G_ij*np.cos(T_i-T_j)+B_ij*np.sin(T_i-T_j))
     return J
 
+"""
+Determines Jacobian value for a given J_21 cell (dQ/dT)
+Takes in: i, j, n, V_i, V_j, T_i, T_j, P_i, Q_i, G_ij, B_ij
+Returns Jacobian cell value
+"""
 def Jacobian_PowerFlow_21(i, j, V_i, V_j, T_i, T_j, P_i, Q_i, G_ij, B_ij):
     if(i==j):
         J = P_i-G_ij*(V_i**2)
@@ -161,6 +145,11 @@ def Jacobian_PowerFlow_21(i, j, V_i, V_j, T_i, T_j, P_i, Q_i, G_ij, B_ij):
         J = -V_i*V_j*(G_ij*np.cos(T_i-T_j)+B_ij*np.sin(T_i-T_j))
     return J
 
+"""
+Determines Jacobian value for a given J_22 cell (dQ/dV)
+Takes in: i, j, n, V_i, V_j, T_i, T_j, P_i, Q_i, G_ij, B_ij
+Returns Jacobian cell value
+"""
 def Jacobian_PowerFlow_22(i, j, V_i, V_j, T_i, T_j, P_i, Q_i, G_ij, B_ij):
     if(i==j):
         J = (Q_i/V_i)-B_ij*V_i
@@ -184,6 +173,7 @@ Returns the updated array
 def update_SysData(sys_Data, sys_G, sys_B, sys_BusType):
     nodes = sys_BusType.size
     n = nodes-1
+    
     """ Determine Jacobian """
     J = np.zeros((2*n,2*n))
     for i in range(n):
@@ -192,28 +182,20 @@ def update_SysData(sys_Data, sys_G, sys_B, sys_BusType):
             J[i,j+n] =  Jacobian_PowerFlow_12(i, j, sys_Data[i+1 ,0], sys_Data[j+1 ,0], sys_Data[i+1 ,1], sys_Data[j+1 ,1], sys_Data[i+1 ,3] + sys_Data[i+1 ,2], sys_Data[i+1 ,5]+sys_Data[i+1 ,4], sys_G[i+1, j+1], sys_B[i+1, j+1])
             J[i+n,j] =  Jacobian_PowerFlow_21(i, j, sys_Data[i+1 ,0], sys_Data[j+1 ,0], sys_Data[i+1 ,1], sys_Data[j+1 ,1], sys_Data[i+1 ,3] + sys_Data[i+1 ,2], sys_Data[i+1 ,5]+sys_Data[i+1 ,4], sys_G[i+1, j+1], sys_B[i+1, j+1])
             J[i+n,j+n]= Jacobian_PowerFlow_22(i, j, sys_Data[i+1 ,0], sys_Data[j+1 ,0], sys_Data[i+1 ,1], sys_Data[j+1 ,1], sys_Data[i+1 ,3] + sys_Data[i+1 ,2], sys_Data[i+1 ,5]+sys_Data[i+1 ,4], sys_G[i+1, j+1], sys_B[i+1, j+1])
-    
-    #print('J')        
-    #print(J)
+
     """ Determine inverse of Jacobian """
     J_inv = inv(J)
-    #print('J_inv')
-    #print(J_inv)
     
     """ Calculate Delta V's, Theta's, and update """
     PQ_TV = np.concatenate((sys_Data[1:nodes,3], sys_Data[1:nodes,5]), axis=None)
-    #print('PQ_TV')
-    #print(PQ_TV)
     Delta = -J_inv @ PQ_TV
-    #print('Delta')
-    #print(Delta)
     Delta_T = np.append([0], Delta[0:n])
     Delta_V = np.append([0], Delta[n:2*n])
     sys_Data[:,0] += Delta_V
     sys_Data[:,1] += Delta_T
     
-    """ Update Q_inj[4], P(T,V)[3],Q(T,V)[5] """ 
-    """Explicit Update: Genator Q_inj, Slack P_inj"""
+    """ Update PQ""" 
+    """Explicit Update: Genator Q_inj, Slack P_inj\Q_inj"""
     
     for i in range(nodes):
         if i==0:
@@ -230,7 +212,7 @@ def update_SysData(sys_Data, sys_G, sys_B, sys_BusType):
                             (sys_G[i,j]*np.sin(sys_Data[i,1]-sys_Data[j,1])-\
                              sys_B[i,j]*np.cos(sys_Data[i,1]-sys_Data[j,1]))
     
-    """Implicit Update: P(T,V)-P_inj,Q(T,V)-Q_inj"""
+    """Implicit Update (Mismatch): P(T,V)-P_inj,Q(T,V)-Q_inj"""
     for i in range(nodes):
         sys_Data[i,3] = -1*sys_Data[i,2]
         sys_Data[i,5] = -1*sys_Data[i,4]
@@ -240,11 +222,7 @@ def update_SysData(sys_Data, sys_G, sys_B, sys_BusType):
                              sys_B[i,j]*np.sin(sys_Data[i,1]-sys_Data[j,1]))
             sys_Data[i,5] += sys_Data[i,0]*sys_Data[j,0]*\
                         (sys_G[i,j]*np.sin(sys_Data[i,1]-sys_Data[j,1])-\
-                         sys_B[i,j]*np.cos(sys_Data[i,1]-sys_Data[j,1]))
-    
-    
-        
-                        
+                         sys_B[i,j]*np.cos(sys_Data[i,1]-sys_Data[j,1]))               
     return sys_Data
 
 

@@ -32,11 +32,8 @@ mismatch_Q = sys_Data[:,5]
 mismatch = [max(abs(mismatch_P)), max(abs(mismatch_Q))]
 iteration = 0
 convergence = [['Iteration', 'Max P Mismatch', 'P Bus', 'Max Q Mismatch', 'Q Bus'],\
-               [iteration, (int)np.array(mismatch[0]), (int)(nodes[abs(mismatch_P)==mismatch[0]]),\
-               (int)np.array(mismatch[1]), (int)(nodes[abs(mismatch_Q)==mismatch[1]])]]
-print(convergence[iteration])
-#print(sys_Data)
-#print(mismatch)
+               [iteration, np.array(mismatch[0]), (int)(nodes[abs(mismatch_P)==mismatch[0]]),\
+               np.array(mismatch[1]), (int)(nodes[abs(mismatch_Q)==mismatch[1]])]]
 
 while(mismatch>tolerance and iteration < 6): 
     update_SysData(sys_Data, sys_G, sys_B, sys_BusType)
@@ -44,9 +41,5 @@ while(mismatch>tolerance and iteration < 6):
     mismatch_Q = sys_Data[:,5]
     mismatch = [max(abs(mismatch_P)), max(abs(mismatch_Q))]
     iteration+=1
-    convergence.append([iteration, (int)np.array(mismatch[0]), (int)(nodes[abs(mismatch_P)==mismatch[0]]),\
-               (int)np.array(mismatch[1]), (int)(nodes[abs(mismatch_Q)==mismatch[1]])])
-    print(convergence[iteration])
-    #print(sys_Data)
-    #print(mismatch)
-print(sys_Data)
+    convergence.append([iteration, np.array(mismatch[0]), (int)(nodes[abs(mismatch_P)==mismatch[0]]),\
+               np.array(mismatch[1]), (int)(nodes[abs(mismatch_Q)==mismatch[1]])])
