@@ -1,5 +1,6 @@
 """
 Power Flow Analysis: Support Functions
+Split of PQ and PV buses
 Created By: 
     Brandon Beaty
     Eliot Nichols
@@ -231,7 +232,81 @@ def update_SysData(sys_Data, sys_G, sys_B, sys_BusType):
                          sys_B[i,j]*np.cos(sys_Data[i,1]-sys_Data[j,1]))               
     return sys_Data
 
+"""Testing seperation of implicit and Explicit"""
+def parseImplicit(sys_Data, sys_BusType):
+    n = sys_Data.shape[0]
+    nI = sys_BusType[sys_BusType=='D'].size
+    sys_DataI = np.zeros((nI, sys_Data.shape[1]))
+    i=0
+    while(i<nI):
+        for j in range(n):
+            if sys_BusType[j]=='D':
+                sys_DataI[i,:] = sys_Data[j,:]
+                i+=1
+    return sys_DataI
 
+def mergeI(sys_Data, sys_DataI, sys_BusType):
+    n = sys_Data.shape[0]
+    nI = sys_DataI.shape[0]
+    i=0
+    while(i<nI):
+        for j in range(n):
+            if sys_BusType[j]=='D':
+                sys_Data[j,:] = sys_DataI[i,:]
+                i+=1
+    return sys_Data
+
+def updateI_SysData(sys_DataI, sys_G, sys_B, sys_BusType):
+    n = sys_DataI.shape[0]
+    J = np.zeros((2*n,2*n))
+    for i in range(n):
+        for j in range(n):
+            J[i,j] =    Jacobian_PowerFlow_11(i, j, sys_DataI[i ,0], sys_DataI[j ,0], sys_DataI[i ,1], sys_DataI[j ,1], sys_DataI[i ,3] + sys_DataI[i ,2], sys_DataI[i ,5]+sys_DataI[i ,4], sys_G[i, j], sys_B[i, j])
+            J[i,j+n] =  Jacobian_PowerFlow_12(i, j, sys_DataI[i ,0], sys_DataI[j ,0], sys_DataI[i ,1], sys_DataI[j ,1], sys_DataI[i ,3] + sys_DataI[i ,2], sys_DataI[i ,5]+sys_DataI[i ,4], sys_G[i, j], sys_B[i, j])
+            J[i+n,j] =  Jacobian_PowerFlow_21(i, j, sys_DataI[i ,0], sys_DataI[j ,0], sys_DataI[i ,1], sys_DataI[j ,1], sys_DataI[i ,3] + sys_DataI[i ,2], sys_DataI[i ,5]+sys_DataI[i ,4], sys_G[i, j], sys_B[i, j])
+            J[i+n,j+n]= Jacobian_PowerFlow_22(i, j, sys_DataI[i ,0], sys_DataI[j ,0], sys_DataI[i ,1], sys_DataI[j ,1], sys_DataI[i ,3] + sys_DataI[i ,2], sys_DataI[i ,5]+sys_DataI[i ,4], sys_G[i, j], sys_B[i, j])
+    
+    """ Determine inverse of Jacobian """
+    J_inv = inv(J)
+    
+    """ Calculate Delta V's, Theta's, and update """
+    PQ_TV = np.concatenate((sys_DataI[:,3], sys_DataI[:,5]), axis=None)
+    Delta = -J_inv @ PQ_TV
+    Delta_T = Delta[0:n]
+    Delta_V = Delta[n:2*n]
+    sys_DataI[:,0] += Delta_V
+    sys_DataI[:,1] += Delta_T
+
+    for i in range(n):
+        sys_DataI[i,3] = -1*sys_DataI[i,2]
+        sys_DataI[i,5] = -1*sys_DataI[i,4]
+        for j in range(n):
+            sys_DataI[i,3] += sys_DataI[i,0]*sys_DataI[j,0]*\
+                            (sys_G[i,j]*np.cos(sys_DataI[i,1]-sys_DataI[j,1])+\
+                             sys_B[i,j]*np.sin(sys_DataI[i,1]-sys_DataI[j,1]))
+            sys_DataI[i,5] += sys_DataI[i,0]*sys_DataI[j,0]*\
+                        (sys_G[i,j]*np.sin(sys_DataI[i,1]-sys_DataI[j,1])-\
+                         sys_B[i,j]*np.cos(sys_DataI[i,1]-sys_DataI[j,1]))
+    return sys_DataI
+
+def updateE_SysData(sys_Data, sys_G, sys_B, sys_BusType):
+    nodes = sys_BusType.size
+    for i in range(nodes):
+        if sys_BusType[i]=='S':
+            sys_Data[i,2]=0
+        if sys_BusType[i]!='D':
+            sys_Data[i,4] = 0
+        for j in range(nodes):
+            if sys_BusType[i]=='S':
+                sys_Data[i,2] += sys_Data[i,0]*sys_Data[j,0]*\
+                            (sys_G[i,j]*np.cos(sys_Data[i,1]-sys_Data[j,1])+\
+                             sys_B[i,j]*np.sin(sys_Data[i,1]-sys_Data[j,1]))
+            if sys_BusType[i]!='D':
+                sys_Data[i,4] += sys_Data[i,0]*sys_Data[j,0]*\
+                            (sys_G[i,j]*np.sin(sys_Data[i,1]-sys_Data[j,1])-\
+                             sys_B[i,j]*np.cos(sys_Data[i,1]-sys_Data[j,1]))
+    return sys_Data
+    
 """
 Code for testing purposes
 """

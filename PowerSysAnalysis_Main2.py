@@ -1,5 +1,6 @@
 """
 Power Flow Analysis: Support Functions
+Split of PQ and PV buses
 Created By: 
     Brandon Beaty
     Eliot Nichols
@@ -18,8 +19,8 @@ First variable is for file location, Second variable is for sheet name
 """
 BusData_Location = ['.\Sample System\system_SampleInput.xlsx', 'BusData'] #Sample Data
 LineData_Location = ['.\Sample System\system_SampleInput.xlsx', 'LineData'] #Sample Data
-#BusData_Location = ['.\Sample System\system_SampleInput.xlsx', 'BusData'] #Sample Data
-#LineData_Location = ['.\Sample System\system_SampleInput.xlsx', 'LineData'] #Sample Data
+BusData_Location = ['.\Sample System\system_SampleInput.xlsx', 'BusData'] #Sample Data
+LineData_Location = ['.\Sample System\system_SampleInput.xlsx', 'LineData'] #Sample Data
 tolerance = [.001, .001] #P.U.
 
 """Data Frame creation for initial Bus and Line Data"""
