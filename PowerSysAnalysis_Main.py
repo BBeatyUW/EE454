@@ -51,3 +51,5 @@ while(mismatch>tolerance and iteration < 10):
                np.array(mismatch[1]), (int)(nodes[abs(mismatch_Q)==mismatch[1]])])
     print(iteration)
     print(sys_Data)
+updateE_SysData(sys_Data, sys_G, sys_B, sys_BusType)
+print(sys_Data)

@@ -160,7 +160,7 @@ def Jacobian_PowerFlow_22(i, j, V_i, V_j, T_i, T_j, P_i, Q_i, G_ij, B_ij):
     return J
 
 
-"""<I believe this is processing the jacobian and Deltas correctly. Not sure about the final updating though of P,Q>
+"""
 Processes 1 iteration of current system data
 Takes in sys_Data, a 2D array containing each node's current information
 [0] - Voltage (V)

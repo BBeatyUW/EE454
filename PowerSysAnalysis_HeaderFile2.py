@@ -83,32 +83,34 @@ Takes in sys_:
     PGen - Active Power produced by each generator node
     VRef - Reference voltages at PV busses
 Returns a 2D array containing each node's current information
-[0] - Voltage (V)
-[1] - Angle (T)
-[2] - Active Power (P_inj)
-[3] - P(T,V)-P_inj (mismatch)
-[4] - Reactive Power (Q_inj)
-[5] - Q(T,V)-Q_inj (mismatch)
+[0] - Bus #
+[1] - Voltage (V)
+[2] - Angle (T)
+[3] - Active Power (P_inj)
+[4] - P(T,V)-P_inj (mismatch)
+[5] - Reactive Power (Q_inj)
+[6] - Q(T,V)-Q_inj (mismatch)
 """
 def init_SysData(sys_LoadP, sys_LoadQ, sys_BusType, sys_PGen, sys_VRef, sys_G, sys_B):
     n= sys_LoadP.size
-    sys_Data = np.zeros((n,6))
-    sys_Data[:,0] = sys_VRef #Sets initial voltages to provided reference
-    sys_Data[:,1] = np.zeros(n) #Sets initial angles to zero
-    sys_Data[:,2] = (sys_PGen-sys_LoadP)/100 #Sets initial power inject to Bus generation minus load in per unit
-    sys_Data[0,2] = (np.sum(sys_LoadP)-np.sum(sys_PGen))/100 #Sets initial guess for active power required from slack bus
-    sys_Data[:,4] = (-sys_LoadQ)/100 #Sets initial power inject to Bus generation minus load in per unit  
-    sys_Data[0,4] = (-np.sum(sys_LoadQ))/100 #Sets initial guess for reactive power required from slack bus
+    sys_Data = np.zeros((n,7))
+    sys_Data[:,0] = 1+np.arange(n)
+    sys_Data[:,1] = sys_VRef #Sets initial voltages to provided reference
+    sys_Data[:,2] = np.zeros(n) #Sets initial angles to zero
+    sys_Data[:,3] = (sys_PGen-sys_LoadP)/100 #Sets initial power inject to Bus generation minus load in per unit
+    sys_Data[0,4] = (np.sum(sys_LoadP)-np.sum(sys_PGen))/100 #Sets initial guess for active power required from slack bus
+    sys_Data[:,5] = (-sys_LoadQ)/100 #Sets initial power inject to Bus generation minus load in per unit  
+    sys_Data[0,6] = (-np.sum(sys_LoadQ))/100 #Sets initial guess for reactive power required from slack bus
     for i in range(n): #Sets initial mismatch to calculated power from (V,T) minus expected inject
-        sys_Data[i,3] = -sys_Data[i,2]
-        sys_Data[i,5] = -sys_Data[i,4] 
+        sys_Data[i,4] = -sys_Data[i,3]
+        sys_Data[i,6] = -sys_Data[i,5] 
         for j in range(n):
-            sys_Data[i,3] += sys_Data[i,0]*sys_Data[j,0]*\
-                            (sys_G[i,j]*np.cos(sys_Data[i,1]-sys_Data[j,1])+\
-                             sys_B[i,j]*np.sin(sys_Data[i,1]-sys_Data[j,1]))
-            sys_Data[i,5] += sys_Data[i,0]*sys_Data[j,0]*\
-                        (sys_G[i,j]*np.sin(sys_Data[i,1]-sys_Data[j,1])-\
-                         sys_B[i,j]*np.cos(sys_Data[i,1]-sys_Data[j,1]))
+            sys_Data[i,4] += sys_Data[i,1]*sys_Data[j,1]*\
+                            (sys_G[i,j]*np.cos(sys_Data[i,2]-sys_Data[j,2])+\
+                             sys_B[i,j]*np.sin(sys_Data[i,2]-sys_Data[j,2]))
+            sys_Data[i,6] += sys_Data[i,1]*sys_Data[j,1]*\
+                        (sys_G[i,j]*np.sin(sys_Data[i,2]-sys_Data[j,2])-\
+                         sys_B[i,j]*np.cos(sys_Data[i,2]-sys_Data[j,2]))
        
     return sys_Data
 
@@ -161,15 +163,16 @@ def Jacobian_PowerFlow_22(i, j, V_i, V_j, T_i, T_j, P_i, Q_i, G_ij, B_ij):
     return J
 
 
-"""<I believe this is processing the jacobian and Deltas correctly. Not sure about the final updating though of P,Q>
+"""
 Processes 1 iteration of current system data
 Takes in sys_Data, a 2D array containing each node's current information
-[0] - Voltage (V)
-[1] - Angle (T)
-[2] - Active Power (P_inj)
-[3] - P(T,V)-P_inj (mismatch)
-[4] - Reactive Power (Q_inj)
-[5] - Q(T,V)-Q_inj (mismatch)
+[0] - Bus #
+[1] - Voltage (V)
+[2] - Angle (T)
+[3] - Active Power (P_inj)
+[4] - P(T,V)-P_inj (mismatch)
+[5] - Reactive Power (Q_inj)
+[6] - Q(T,V)-Q_inj (mismatch)
 As well as, the systems G and B matrices, and node types
 Returns the updated array
 """
