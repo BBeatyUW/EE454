@@ -18,8 +18,8 @@ First variable is for file location, Second variable is for sheet name
 """
 BusData_Location = ['.\Sample System\system_SampleInput.xlsx', 'BusData'] #Sample Data
 LineData_Location = ['.\Sample System\system_SampleInput.xlsx', 'LineData'] #Sample Data
-#BusData_Location = ['.\Sample System\system_SampleInput.xlsx', 'BusData'] #Sample Data
-#LineData_Location = ['.\Sample System\system_SampleInput.xlsx', 'LineData'] #Sample Data
+#BusData_Location = ['system_basecase.xlsx', 'BusData'] #Sample Data
+#LineData_Location = ['system_basecase.xlsx', 'LineData'] #Sample Data
 tolerance = [.001, .001] #P.U.
 
 """Data Frame creation for initial Bus and Line Data"""
@@ -41,7 +41,7 @@ convergence = [['Iteration', 'Max P Mismatch', 'P Bus', 'Max Q Mismatch', 'Q Bus
 print(iteration)
 print(sys_Data)
 
-while(mismatch>tolerance and iteration < 10): 
+while(mismatch>tolerance and iteration < 2): 
     sys_Data = update_SysData(sys_Data, sys_G, sys_B, sys_BusType)
     mismatch_P = sys_Data[:,3]
     mismatch_Q = sys_Data[:,5]
@@ -51,5 +51,3 @@ while(mismatch>tolerance and iteration < 10):
                np.array(mismatch[1]), (int)(nodes[abs(mismatch_Q)==mismatch[1]])])
     print(iteration)
     print(sys_Data)
-updateE_SysData(sys_Data, sys_G, sys_B, sys_BusType)
-print(sys_Data)

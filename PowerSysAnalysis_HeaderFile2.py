@@ -98,9 +98,9 @@ def init_SysData(sys_LoadP, sys_LoadQ, sys_BusType, sys_PGen, sys_VRef, sys_G, s
     sys_Data[:,1] = sys_VRef #Sets initial voltages to provided reference
     sys_Data[:,2] = np.zeros(n) #Sets initial angles to zero
     sys_Data[:,3] = (sys_PGen-sys_LoadP)/100 #Sets initial power inject to Bus generation minus load in per unit
-    sys_Data[0,4] = (np.sum(sys_LoadP)-np.sum(sys_PGen))/100 #Sets initial guess for active power required from slack bus
+    sys_Data[0,3] = (np.sum(sys_LoadP)-np.sum(sys_PGen))/100 #Sets initial guess for active power required from slack bus
     sys_Data[:,5] = (-sys_LoadQ)/100 #Sets initial power inject to Bus generation minus load in per unit  
-    sys_Data[0,6] = (-np.sum(sys_LoadQ))/100 #Sets initial guess for reactive power required from slack bus
+    sys_Data[0,5] = (-np.sum(sys_LoadQ))/100 #Sets initial guess for reactive power required from slack bus
     for i in range(n): #Sets initial mismatch to calculated power from (V,T) minus expected inject
         sys_Data[i,4] = -sys_Data[i,3]
         sys_Data[i,6] = -sys_Data[i,5] 
@@ -176,138 +176,73 @@ Takes in sys_Data, a 2D array containing each node's current information
 As well as, the systems G and B matrices, and node types
 Returns the updated array
 """
-def update_SysData(sys_Data, sys_G, sys_B, sys_BusType):
-    nodes = sys_BusType.size
-    n = nodes-1
-    
-    """ Determine Jacobian """
-    J = np.zeros((2*n,2*n))
-    for i in range(n):
-        for j in range(n):                  #(i, j, V_i,               V_j,             T_i,              T_j,              P_i,                                 Q_i,                               G_ij,            B_ij)
-            J[i,j] =    Jacobian_PowerFlow_11(i, j, sys_Data[i+1 ,0], sys_Data[j+1 ,0], sys_Data[i+1 ,1], sys_Data[j+1 ,1], sys_Data[i+1 ,3] + sys_Data[i+1 ,2], sys_Data[i+1 ,5]+sys_Data[i+1 ,4], sys_G[i+1, j+1], sys_B[i+1, j+1])
-            J[i,j+n] =  Jacobian_PowerFlow_12(i, j, sys_Data[i+1 ,0], sys_Data[j+1 ,0], sys_Data[i+1 ,1], sys_Data[j+1 ,1], sys_Data[i+1 ,3] + sys_Data[i+1 ,2], sys_Data[i+1 ,5]+sys_Data[i+1 ,4], sys_G[i+1, j+1], sys_B[i+1, j+1])
-            J[i+n,j] =  Jacobian_PowerFlow_21(i, j, sys_Data[i+1 ,0], sys_Data[j+1 ,0], sys_Data[i+1 ,1], sys_Data[j+1 ,1], sys_Data[i+1 ,3] + sys_Data[i+1 ,2], sys_Data[i+1 ,5]+sys_Data[i+1 ,4], sys_G[i+1, j+1], sys_B[i+1, j+1])
-            J[i+n,j+n]= Jacobian_PowerFlow_22(i, j, sys_Data[i+1 ,0], sys_Data[j+1 ,0], sys_Data[i+1 ,1], sys_Data[j+1 ,1], sys_Data[i+1 ,3] + sys_Data[i+1 ,2], sys_Data[i+1 ,5]+sys_Data[i+1 ,4], sys_G[i+1, j+1], sys_B[i+1, j+1])
-
-    """ Determine inverse of Jacobian """
-    J_inv = inv(J)
-    
-    """ Calculate Delta V's, Theta's, and update """
-    PQ_TV = np.concatenate((sys_Data[1:nodes,3], sys_Data[1:nodes,5]), axis=None)
-    Delta = -J_inv @ PQ_TV
-    Delta_T = np.append([0], Delta[0:n])
-    Delta_V = np.append([0], Delta[n:2*n])
-    
-    for i in range(nodes):
-        if(sys_BusType[i]=='D'):
-            sys_Data[i,0] += Delta_V[i]
-    
-    #sys_Data[:,0] += Delta_V
-    sys_Data[:,1] += Delta_T
-    
-    """ Update PQ""" 
-    """Explicit Update: Genator Q_inj, Slack P_inj\Q_inj"""
-    for i in range(nodes):
-        if i==0:
-            sys_Data[i,2]=0
-        if sys_BusType[i]!='D':
-            sys_Data[i,4] = 0
-        for j in range(nodes):
-            if i==0:
-                sys_Data[i,2] += sys_Data[i,0]*sys_Data[j,0]*\
-                            (sys_G[i,j]*np.cos(sys_Data[i,1]-sys_Data[j,1])+\
-                             sys_B[i,j]*np.sin(sys_Data[i,1]-sys_Data[j,1]))
-            if sys_BusType[i]!='D':
-                sys_Data[i,4] += sys_Data[i,0]*sys_Data[j,0]*\
-                            (sys_G[i,j]*np.sin(sys_Data[i,1]-sys_Data[j,1])-\
-                             sys_B[i,j]*np.cos(sys_Data[i,1]-sys_Data[j,1]))
-                          
-    """Implicit Update (Mismatch): P(T,V)-P_inj,Q(T,V)-Q_inj"""
-    for i in range(nodes):
-        sys_Data[i,3] = -1*sys_Data[i,2]
-        sys_Data[i,5] = -1*sys_Data[i,4]
-        for j in range(nodes):
-            sys_Data[i,3] += sys_Data[i,0]*sys_Data[j,0]*\
-                            (sys_G[i,j]*np.cos(sys_Data[i,1]-sys_Data[j,1])+\
-                             sys_B[i,j]*np.sin(sys_Data[i,1]-sys_Data[j,1]))
-            sys_Data[i,5] += sys_Data[i,0]*sys_Data[j,0]*\
-                        (sys_G[i,j]*np.sin(sys_Data[i,1]-sys_Data[j,1])-\
-                         sys_B[i,j]*np.cos(sys_Data[i,1]-sys_Data[j,1]))               
-    return sys_Data
-
-"""Testing seperation of implicit and Explicit"""
-def parseImplicit(sys_Data, sys_BusType):
-    n = sys_Data.shape[0]
-    nI = sys_BusType[sys_BusType=='D'].size
+def updateI_SysData(sys_Data, sys_G, sys_B, sys_BusType):
+    """Determine PQ buses"""
+    n = sys_BusType.size
+    nI = sys_BusType[sys_BusType != 'S'].size
     sys_DataI = np.zeros((nI, sys_Data.shape[1]))
-    i=0
-    while(i<nI):
-        for j in range(n):
-            if sys_BusType[j]=='D':
-                sys_DataI[i,:] = sys_Data[j,:]
-                i+=1
-    return sys_DataI
-
-def mergeI(sys_Data, sys_DataI, sys_BusType):
-    n = sys_Data.shape[0]
-    nI = sys_DataI.shape[0]
-    i=0
-    while(i<nI):
-        for j in range(n):
-            if sys_BusType[j]=='D':
-                sys_Data[j,:] = sys_DataI[i,:]
-                i+=1
-    return sys_Data
-
-def updateI_SysData(sys_DataI, sys_G, sys_B, sys_BusType):
-    n = sys_DataI.shape[0]
-    J = np.zeros((2*n,2*n))
-    for i in range(n):
-        for j in range(n):
-            J[i,j] =    Jacobian_PowerFlow_11(i, j, sys_DataI[i ,0], sys_DataI[j ,0], sys_DataI[i ,1], sys_DataI[j ,1], sys_DataI[i ,3] + sys_DataI[i ,2], sys_DataI[i ,5]+sys_DataI[i ,4], sys_G[i, j], sys_B[i, j])
-            J[i,j+n] =  Jacobian_PowerFlow_12(i, j, sys_DataI[i ,0], sys_DataI[j ,0], sys_DataI[i ,1], sys_DataI[j ,1], sys_DataI[i ,3] + sys_DataI[i ,2], sys_DataI[i ,5]+sys_DataI[i ,4], sys_G[i, j], sys_B[i, j])
-            J[i+n,j] =  Jacobian_PowerFlow_21(i, j, sys_DataI[i ,0], sys_DataI[j ,0], sys_DataI[i ,1], sys_DataI[j ,1], sys_DataI[i ,3] + sys_DataI[i ,2], sys_DataI[i ,5]+sys_DataI[i ,4], sys_G[i, j], sys_B[i, j])
-            J[i+n,j+n]= Jacobian_PowerFlow_22(i, j, sys_DataI[i ,0], sys_DataI[j ,0], sys_DataI[i ,1], sys_DataI[j ,1], sys_DataI[i ,3] + sys_DataI[i ,2], sys_DataI[i ,5]+sys_DataI[i ,4], sys_G[i, j], sys_B[i, j])
     
+    index = 0
+    for i in range(n):
+        if sys_BusType[i] != 'S':
+            sys_DataI[index, :] = sys_Data[i, :]
+            index += 1
+    """ Determine Jacobian """
+    J = np.zeros((2*nI,2*nI))
+    
+    for i in range (nI):
+        for j in range (nI):                  #(i, j, V_i,               V_j,             T_i,              T_j,              P_i,                         Q_i,             G_ij,        B_ij)
+            J[i,j] =      Jacobian_PowerFlow_11(i, j, sys_DataI[i ,1], sys_DataI[j ,1], sys_DataI[i ,2], sys_DataI[j ,2], sys_DataI[i, 4]+sys_DataI[i, 3], sys_DataI[i, 6]+sys_DataI[i, 5], sys_G[i+1, j+1], sys_B[i+1, j+1])
+            J[i,j+nI] =   Jacobian_PowerFlow_12(i, j, sys_DataI[i ,1], sys_DataI[j ,1], sys_DataI[i ,2], sys_DataI[j ,2], sys_DataI[i, 4]+sys_DataI[i, 3], sys_DataI[i, 6]+sys_DataI[i, 5], sys_G[i+1, j+1], sys_B[i+1, j+1])
+            J[i+nI,j] =   Jacobian_PowerFlow_21(i, j, sys_DataI[i ,1], sys_DataI[j ,1], sys_DataI[i ,2], sys_DataI[j ,2], sys_DataI[i, 4]+sys_DataI[i, 3], sys_DataI[i, 6]+sys_DataI[i, 5], sys_G[i+1, j+1], sys_B[i+1, j+1])
+            J[i+nI,j+nI]= Jacobian_PowerFlow_22(i, j, sys_DataI[i ,1], sys_DataI[j ,1], sys_DataI[i ,2], sys_DataI[j ,2], sys_DataI[i, 4]+sys_DataI[i, 3], sys_DataI[i, 6]+sys_DataI[i, 5], sys_G[i+1, j+1], sys_B[i+1, j+1])
+    #print(J)
     """ Determine inverse of Jacobian """
     J_inv = inv(J)
     
-    """ Calculate Delta V's, Theta's, and update """
-    PQ_TV = np.concatenate((sys_DataI[:,3], sys_DataI[:,5]), axis=None)
+    """ Calculate Delta V's, Theta's, and update V and Theta """
+    PQ_TV = np.concatenate((sys_DataI[:,4], sys_DataI[:,6]), axis=None)
     Delta = -J_inv @ PQ_TV
-    Delta_T = Delta[0:n]
-    Delta_V = Delta[n:2*n]
-    sys_DataI[:,0] += Delta_V
-    sys_DataI[:,1] += Delta_T
-
+    Delta_T = Delta[0:nI]
+    Delta_V = Delta[nI:2*nI]
+    for i in range(nI):
+        if (sys_BusType[1:n])[i]=='D':
+            sys_DataI[i,1] += Delta_V[i]
+    sys_DataI[:,2] += Delta_T
+    #print(Delta)
+    
+    """Merge PQ update with rest of system"""
+    index=0
     for i in range(n):
-        sys_DataI[i,3] = -1*sys_DataI[i,2]
-        sys_DataI[i,5] = -1*sys_DataI[i,4]
+        if sys_Data[i,0]==sys_DataI[index,0]:
+            sys_Data[i,:] = sys_DataI[index,:]
+            index+=1
+    
+    """ Update PQ buses"""                         
+    """Implicit Update (Mismatch): P(T,V)-P_inj,Q(T,V)-Q_inj"""
+    for i in range(n):
+        sys_Data[i,4] = -sys_Data[i,3]
+        sys_Data[i,6] = -sys_Data[i,5]
         for j in range(n):
-            sys_DataI[i,3] += sys_DataI[i,0]*sys_DataI[j,0]*\
-                            (sys_G[i,j]*np.cos(sys_DataI[i,1]-sys_DataI[j,1])+\
-                             sys_B[i,j]*np.sin(sys_DataI[i,1]-sys_DataI[j,1]))
-            sys_DataI[i,5] += sys_DataI[i,0]*sys_DataI[j,0]*\
-                        (sys_G[i,j]*np.sin(sys_DataI[i,1]-sys_DataI[j,1])-\
-                         sys_B[i,j]*np.cos(sys_DataI[i,1]-sys_DataI[j,1]))
-    return sys_DataI
+            sys_Data[i,4] += sys_Data[i,1]*sys_Data[j,1]*((sys_G[i,j]*np.cos(sys_Data[i,2]-sys_Data[j,2]))+(sys_B[i,j]*np.sin(sys_Data[i,2]-sys_Data[j,2]))) 
+            sys_Data[i,6] += sys_Data[i,1]*sys_Data[j,1]*((sys_G[i,j]*np.sin(sys_Data[i,2]-sys_Data[j,2]))-(sys_B[i,j]*np.cos(sys_Data[i,2]-sys_Data[j,2]))) 
+            
+    
+    
+    return sys_Data
 
 def updateE_SysData(sys_Data, sys_G, sys_B, sys_BusType):
     nodes = sys_BusType.size
     for i in range(nodes):
         if sys_BusType[i]=='S':
-            sys_Data[i,2]=0
+            sys_Data[i,3] = 0
         if sys_BusType[i]!='D':
-            sys_Data[i,4] = 0
+            sys_Data[i,5] = 0
         for j in range(nodes):
             if sys_BusType[i]=='S':
-                sys_Data[i,2] += sys_Data[i,0]*sys_Data[j,0]*\
-                            (sys_G[i,j]*np.cos(sys_Data[i,1]-sys_Data[j,1])+\
-                             sys_B[i,j]*np.sin(sys_Data[i,1]-sys_Data[j,1]))
+                sys_Data[i,3] += sys_Data[i,1]*sys_Data[j,1]*((sys_G[i,j]*np.cos(sys_Data[i,2]-sys_Data[j,2]))+(sys_B[i,j]*np.sin(sys_Data[i,2]-sys_Data[j,2]))) 
             if sys_BusType[i]!='D':
-                sys_Data[i,4] += sys_Data[i,0]*sys_Data[j,0]*\
-                            (sys_G[i,j]*np.sin(sys_Data[i,1]-sys_Data[j,1])-\
-                             sys_B[i,j]*np.cos(sys_Data[i,1]-sys_Data[j,1]))
+                sys_Data[i,5] += sys_Data[i,1]*sys_Data[j,1]*((sys_G[i,j]*np.sin(sys_Data[i,2]-sys_Data[j,2]))-(sys_B[i,j]*np.cos(sys_Data[i,2]-sys_Data[j,2])))  
     return sys_Data
     
 """

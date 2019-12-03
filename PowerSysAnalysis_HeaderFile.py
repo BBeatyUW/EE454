@@ -184,7 +184,7 @@ def update_SysData(sys_Data, sys_G, sys_B, sys_BusType):
             J[i,j+n] =  Jacobian_PowerFlow_12(i, j, sys_Data[i+1 ,0], sys_Data[j+1 ,0], sys_Data[i+1 ,1], sys_Data[j+1 ,1], sys_Data[i+1 ,3] + sys_Data[i+1 ,2], sys_Data[i+1 ,5]+sys_Data[i+1 ,4], sys_G[i+1, j+1], sys_B[i+1, j+1])
             J[i+n,j] =  Jacobian_PowerFlow_21(i, j, sys_Data[i+1 ,0], sys_Data[j+1 ,0], sys_Data[i+1 ,1], sys_Data[j+1 ,1], sys_Data[i+1 ,3] + sys_Data[i+1 ,2], sys_Data[i+1 ,5]+sys_Data[i+1 ,4], sys_G[i+1, j+1], sys_B[i+1, j+1])
             J[i+n,j+n]= Jacobian_PowerFlow_22(i, j, sys_Data[i+1 ,0], sys_Data[j+1 ,0], sys_Data[i+1 ,1], sys_Data[j+1 ,1], sys_Data[i+1 ,3] + sys_Data[i+1 ,2], sys_Data[i+1 ,5]+sys_Data[i+1 ,4], sys_G[i+1, j+1], sys_B[i+1, j+1])
-
+    print(J)
     """ Determine inverse of Jacobian """
     J_inv = inv(J)
     
@@ -193,7 +193,7 @@ def update_SysData(sys_Data, sys_G, sys_B, sys_BusType):
     Delta = -J_inv @ PQ_TV
     Delta_T = np.append([0], Delta[0:n])
     Delta_V = np.append([0], Delta[n:2*n])
-    
+    print(Delta)
     for i in range(nodes):
         if(sys_BusType[i]=='D'):
             sys_Data[i,0] += Delta_V[i]
