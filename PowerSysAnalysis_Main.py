@@ -26,7 +26,7 @@ S_Base = 100 #MW
 """Data Frame creation for initial Bus and Line Data"""
 df_BusData, df_LineData = import_BusAndLineData(BusData_Location, LineData_Location)
 nodes = 1+np.arange(df_BusData.shape[0])
-sys_G, sys_B = build_AdmittanceMatrix(df_LineData, nodes.size)
+sys_Y, sys_G, sys_B = build_AdmittanceMatrix(df_LineData, nodes.size)
 sys_BusNum, sys_LoadP, sys_LoadQ, sys_BusType, sys_PGen, sys_VRef = init_BusData(df_BusData)
 sys_Data = init_SysData(sys_BusNum, sys_LoadP, sys_LoadQ, sys_BusType, sys_PGen, sys_VRef, sys_G, sys_B, S_Base)
 np.set_printoptions(precision=4, suppress=True)

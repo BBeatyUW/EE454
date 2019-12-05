@@ -52,7 +52,7 @@ def build_AdmittanceMatrix(LineData, sys_Size):
                sys_Y[i][j] = sys_Y[j][i] 
     sys_G = sys_Y.real
     sys_B = sys_Y.imag
-    return sys_G, sys_B
+    return sys_Y, sys_G, sys_B
 
 """
 Parses intial bus information from data
