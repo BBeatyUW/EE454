@@ -35,7 +35,7 @@ mismatch_P = sys_Data[:,4]
 mismatch_Q = sys_Data[:,6]
 mismatch_max = [max(abs(mismatch_P)), max(abs(mismatch_Q))]
 iteration = 0
-while(iteration<15 and mismatch_max>tolerance):
+while(iteration<1 and mismatch_max>tolerance):
     print(iteration)
     print(sys_Data)
     sys_Data = update_SysData(sys_Data, sys_G, sys_B, sys_BusType)

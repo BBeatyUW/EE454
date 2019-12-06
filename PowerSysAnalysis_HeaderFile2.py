@@ -202,7 +202,7 @@ def update_SysData(sys_Data, sys_G, sys_B, sys_BusType):
         elif G_index[i]:
             J=np.delete(J, i+n, 0)
             J=np.delete(J, i+n, 1)
-    
+    print(J)
     """Determine Inverse"""
     J_inv = inv(J)
     
