@@ -244,3 +244,121 @@ def update_SysData(sys_Data, sys_G, sys_B, sys_BusType):
             sys_Data[i,6] += sys_Data[i,1]*sys_Data[j,1]*((sys_G[i,j]*np.sin(sys_Data[i,2]-sys_Data[j,2]))-(sys_B[i,j]*np.cos(sys_Data[i,2]-sys_Data[j,2])))
     
     return sys_Data
+
+
+
+"""
+Returns Appearent, real, and reactive power flowing a line.
+"""
+def PowerFlow (V_i,T_i,V_j,T_j,B_tot,y_ij):
+    I_ij = y_ij * (V_i * np.cos(T_i) + 1j * V_i * np.sin(T_i) - V_j * np.cos(T_j) - 1j * V_j
+                   * np.sin(T_j)) + (1j*B_tot / 2) * (V_i * np.cos(T_i) + 1j * V_i * np.sin(T_i))
+    S_ij = (V_i*np.cos(T_i)+1j*V_i*np.sin(T_i)) * (I_ij.conjugate())
+    return abs(S_ij), S_ij.real, S_ij.imag
+
+
+"""
+This fuction collects all the needed line data and turns it into lists for exporting.
+LD_val is a matrix made from the dataframe that is given.
+S_ij is a list that stores all the apparent power flowing in the line (s_ij)
+P_ij is a list that stores all the apparent power flowing in the line (p_ij)
+Q_ij is a list that stores all the apparent power flowing in the line (q_ij)
+i_buses is a list of the buses that are used as a starting point
+j_buses is a list of the buses that are used as an ending point
+violataion list stores whether the line power limit was violated or not
+"""
+def LineFlowResults (sys_Data, LineData, sys_Y):
+    LD_val = LineData.values
+    S_ij = []
+    P_ij = []
+    Q_ij = []
+    i_buses = LD_val[0:,0]
+    j_buses = LD_val[0:,1]
+    violation = []
+    for i in range (0, len(LineData)):
+        B_tot = (LD_val[i:i+1,4])
+        V_i = sys_Data[(int(LD_val[i:i+1,0]))-1:(int(LD_val[i:i+1,0])),1]
+        T_i = sys_Data[(int(LD_val[i:i + 1, 0])) - 1:(int(LD_val[i:i + 1, 0])), 2]
+        V_j = sys_Data[(int(LD_val[i:i + 1, 1])) - 1:(int(LD_val[i:i + 1, 1])), 1]
+        T_j = sys_Data[(int(LD_val[i:i + 1, 1])) - 1:(int(LD_val[i:i + 1, 1])), 2]
+        y_ij = -1 * ( sys_Y[(int(LD_val[i:i + 1, 0]) - 1):(int(LD_val[i:i + 1, 0])),
+               (int(LD_val[i:i + 1, 1]) - 1)])
+
+        PowerFlow(V_i, T_i, V_j, T_j, B_tot, y_ij)
+        s_ij, p_ij, q_ij = PowerFlow(V_i,T_i,V_j,T_j,B_tot,y_ij)
+        if s_ij < (LD_val[i:i+1,5]):
+            violation.append('FALSE')
+        else:
+            violation.append('TRUE')
+        S_ij.append(100 * float(s_ij))
+        P_ij.append(100 * float(p_ij))
+        Q_ij.append(100 * float(q_ij))
+    return S_ij, P_ij, Q_ij, violation, i_buses, j_buses
+
+"""
+This fuction collects all the needed bus data and turns it into lists for exporting.
+"""
+def BusResults(sys_Data):
+    V_violate = []
+    for i in range (0,len(sys_Data)):
+        if  (sys_Data[i:i+1,1] <= 1.05 and sys_Data[i:i+1,1] >= 0.95):
+            V_violate.append('FALSE')
+        else:
+            V_violate.append('TRUE')
+    bus_nums = sys_Data[0:,0]
+    bus_v = sys_Data[0:,1]
+    bus_deg = 180* sys_Data[0:,2] / np.pi
+    bus_p = 100 * sys_Data[0:,3]
+    bus_q = 100 * sys_Data[0:,5]
+    return bus_nums.astype(int), bus_v, bus_deg, bus_p, bus_q, V_violate
+
+"""
+This function collects all the data obtained and outputs it to a single excel file with multiple sheets.
+"""
+def DataOutput(sys_Data, LineData, sys_Y,iteration_list,mismatch_P_list,mismatch_Q_list,max_P_bus,max_Q_bus):
+
+    y_matrix = pd.DataFrame(data=sys_Y)
+    g_matrix = pd.DataFrame(data=sys_Y.real)
+    b_matrix = pd.DataFrame(data=sys_Y.imag)
+
+    bus_nums, bus_v, bus_deg, bus_p, bus_q, V_violate = BusResults(sys_Data)
+    S_ij, P_ij, Q_ij, S_violation, i_buses, j_buses = LineFlowResults(sys_Data, LineData, sys_Y)
+
+    df_Convergence = pd.DataFrame({'Iteration': iteration_list, 'Max P Misr': mismatch_P_list, 'P Bus': max_P_bus
+                                    , 'Max Q Misr': mismatch_Q_list, 'Q Bus': max_Q_bus})
+
+    df_BusOutput = pd.DataFrame({'Bus Number':bus_nums,'V (pu)':bus_v,'Angle (deg)':bus_deg
+                                    ,'P inj. (MW)':bus_p,'Q inj. (MVar)':bus_q,
+                                 'Voltage Violation':V_violate})
+
+    df_LineOutput = pd.DataFrame({'From Bus': i_buses, 'To Bus': j_buses, 'P Flow (MW)': P_ij, 'Q Flow (MVar)': Q_ij, 'S Flow (MVA)': S_ij,
+                                 'Line MVA Violation': S_violation})
+
+    writer = pd.ExcelWriter("PowerSystemData.xlsx", engine='xlsxwriter')
+
+    df_BusOutput.to_excel(writer, sheet_name='BusData',startrow=1,header=False,index=False)
+    df_LineOutput.to_excel(writer, sheet_name='LineData', startrow=1, header=False, index=False)
+    df_Convergence.to_excel(writer, sheet_name='ConvergenceHistory', startrow=1, header=False, index=False)
+    y_matrix.to_excel(writer, sheet_name='Y_matrix(Admittance)', startrow=0,header=False,index=False)
+    g_matrix.to_excel(writer, sheet_name='G_matrix', startrow=0,header=False,index=False)
+    b_matrix.to_excel(writer, sheet_name='B_matrix', startrow=0,header=False,index=False)
+
+    workbook = writer.book
+    busworksheet = writer.sheets['BusData']
+    lineworksheet = writer.sheets['LineData']
+    convergencesheet = writer.sheets['ConvergenceHistory']
+
+    header_format = workbook.add_format({'bold': True,
+    'text_wrap': True,
+    'valign': 'top',
+    'fg_color': '#D7E4BC',
+    'border': 1})
+
+    for col_num, value in enumerate(df_BusOutput.columns.values):
+        busworksheet.write(0, col_num,value,header_format)
+    for col_num, value in enumerate(df_LineOutput.columns.values):
+        lineworksheet.write(0, col_num, value, header_format)
+    for col_num, value in enumerate(df_Convergence.columns.values):
+        convergencesheet.write(0, col_num, value, header_format)
+
+    writer.save()
