@@ -286,7 +286,9 @@ def LineFlowResults (sys_Data, LineData, sys_Y):
 
         PowerFlow(V_i, T_i, V_j, T_j, B_tot, y_ij)
         s_ij, p_ij, q_ij = PowerFlow(V_i,T_i,V_j,T_j,B_tot,y_ij)
-        if s_ij < (LD_val[i:i+1,5]):
+        
+        print('Line Violation: ', s_ij, LD_val[i:i+1,5])
+        if s_ij*100 < (LD_val[i:i+1,5]):
             violation.append('FALSE')
         else:
             violation.append('TRUE')
