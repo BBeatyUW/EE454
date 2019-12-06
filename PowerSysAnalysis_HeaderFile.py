@@ -317,7 +317,7 @@ def BusResults(sys_Data):
 """
 This function collects all the data obtained and outputs it to a single excel file with multiple sheets.
 """
-def DataOutput(sys_Data, LineData, sys_Y,iteration_list,mismatch_P_list,mismatch_Q_list,max_P_bus,max_Q_bus):
+def DataOutput(FileName, sys_Data, LineData, sys_Y, iteration_list, mismatch_P_list, mismatch_Q_list, max_P_bus, max_Q_bus):
 
     y_matrix = pd.DataFrame(data=sys_Y)
     g_matrix = pd.DataFrame(data=sys_Y.real)
@@ -336,7 +336,7 @@ def DataOutput(sys_Data, LineData, sys_Y,iteration_list,mismatch_P_list,mismatch
     df_LineOutput = pd.DataFrame({'From Bus': i_buses, 'To Bus': j_buses, 'P Flow (MW)': P_ij, 'Q Flow (MVar)': Q_ij, 'S Flow (MVA)': S_ij,
                                  'Line MVA Violation': S_violation})
 
-    writer = pd.ExcelWriter("PowerSystemData.xlsx", engine='xlsxwriter')
+    writer = pd.ExcelWriter(FileName+".xlsx", engine='xlsxwriter')
 
     df_BusOutput.to_excel(writer, sheet_name='BusData',startrow=1,header=False,index=False)
     df_LineOutput.to_excel(writer, sheet_name='LineData', startrow=1, header=False, index=False)

@@ -16,8 +16,9 @@ from PowerSysAnalysis_HeaderFile import *
 Loction for Bus and line data
 First variable is for file location, Second variable is for sheet name
 """
-#BusData_Location = ['.\Sample System\system_SampleInput.xlsx', 'BusData'] #Sample Data
-#LineData_Location = ['.\Sample System\system_SampleInput.xlsx', 'LineData'] #Sample Data
+#BusData_Sample = ['.\Sample System\system_SampleInput.xlsx', 'BusData'] #Sample Data
+#LineData_Sample = ['.\Sample System\system_SampleInput.xlsx', 'LineData'] #Sample Data
+#Output_Sample = "SampleData"
 BusData_Location = ['system_basecase.xlsx', 'BusData'] #BaseCase Data
 LineData_Location = ['system_basecase.xlsx', 'LineData'] #BaseCase Data
 tolerance = [.001, .001] #P.U.
@@ -58,8 +59,9 @@ while(iteration<15 and mismatch_max>tolerance):
     mismatch_Q = sys_Data[1:n,6]
     mismatch_max = [max(abs(mismatch_P)), max(abs(mismatch_Q))]
     iteration += 1
-
+print(iteration)
+print(sys_Data)
 
 
 """This line exports final data to excel. Don't delete, but feel free to move."""
-DataOutput(sys_Data, df_LineData, sys_Y,iteration_list,mismatch_P_list,mismatch_Q_list,max_P_bus,max_Q_bus)
+DataOutput(Output_FileName, sys_Data, df_LineData, sys_Y,iteration_list,mismatch_P_list,mismatch_Q_list,max_P_bus,max_Q_bus)
