@@ -121,10 +121,10 @@ Returns Jacobian cell value
 """
 def Jacobian_PowerFlow_11(i, j, V_i, V_j, T_i, T_j, P_i, Q_i, G_ij, B_ij):
     if(i==j):
-        J = -Q_i - B_ij*(V_i**2)
+        J_ij = -Q_i - B_ij*(V_i**2)
     else:
-        J =  V_i*V_j*(G_ij*np.sin(T_i-T_j)-B_ij*np.cos(T_i-T_j))
-    return J
+        J_ij =  V_i*V_j*(G_ij*np.sin(T_i-T_j)-B_ij*np.cos(T_i-T_j))
+    return J_ij
 
 """
 Determines Jacobian value for a given J_12 cell (dP/dV)
@@ -133,10 +133,10 @@ Returns Jacobian cell value
 """
 def Jacobian_PowerFlow_12(i, j, V_i, V_j, T_i, T_j, P_i, Q_i, G_ij, B_ij):
     if(i==j):
-        J = (P_i/V_i) + G_ij*V_i
+        J_ij = (P_i/V_i) + G_ij*V_i
     else:
-        J = V_i*(G_ij*np.cos(T_i-T_j)+B_ij*np.sin(T_i-T_j))
-    return J
+        J_ij = V_i*(G_ij*np.cos(T_i-T_j)+B_ij*np.sin(T_i-T_j))
+    return J_ij
 
 """
 Determines Jacobian value for a given J_21 cell (dQ/dT)
@@ -145,10 +145,10 @@ Returns Jacobian cell value
 """
 def Jacobian_PowerFlow_21(i, j, V_i, V_j, T_i, T_j, P_i, Q_i, G_ij, B_ij):
     if(i==j):
-        J = P_i-G_ij*(V_i**2)
+        J_ij = P_i-G_ij*(V_i**2)
     else:
-        J = -V_i*V_j*(G_ij*np.cos(T_i-T_j)+B_ij*np.sin(T_i-T_j))
-    return J
+        J_ij = -V_i*V_j*(G_ij*np.cos(T_i-T_j)+B_ij*np.sin(T_i-T_j))
+    return J_ij
 
 """
 Determines Jacobian value for a given J_22 cell (dQ/dV)
@@ -157,10 +157,10 @@ Returns Jacobian cell value
 """
 def Jacobian_PowerFlow_22(i, j, V_i, V_j, T_i, T_j, P_i, Q_i, G_ij, B_ij):
     if(i==j):
-        J = (Q_i/V_i)-B_ij*V_i
+        J_ij = (Q_i/V_i)-B_ij*V_i
     else:
-        J = V_i*(G_ij*np.sin(T_i-T_j)-B_ij*np.cos(T_i-T_j))
-    return J
+        J_ij = V_i*(G_ij*np.sin(T_i-T_j)-B_ij*np.cos(T_i-T_j))
+    return J_ij
 
 
 """
