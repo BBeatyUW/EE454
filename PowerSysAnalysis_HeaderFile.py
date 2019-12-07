@@ -402,17 +402,6 @@ def PowerFlowAnalysis(BusData_Location, LineData_Location, Output_FileName, tole
     mismatch_Q_list = []
     max_P_bus = []
     max_Q_bus = []
-    iteration_list.append(iteration)        
-    bus_P, = np.where(mismatch_P == max(abs(mismatch_P)))
-    if len(bus_P) == 0:
-        bus_P, = np.where(mismatch_P == -1*max(abs(mismatch_P)))
-    max_P_bus.append(int(bus_P+2))
-    bus_Q, = np.where(mismatch_Q == max(abs(mismatch_Q)))
-    if len(bus_Q) == 0:
-        bus_Q, = np.where(mismatch_Q == -1*max(abs(mismatch_Q)))
-    max_Q_bus.append(int(bus_Q+2))
-    mismatch_P_list.append(max(abs(mismatch_P)))
-    mismatch_Q_list.append(max(abs(mismatch_Q)))
     
     """Loop until solution is reached or max iteration is exceeded"""
     while(iteration<15 and mismatch_max>tolerance):
@@ -434,6 +423,19 @@ def PowerFlowAnalysis(BusData_Location, LineData_Location, Output_FileName, tole
         mismatch_Q = sys_Data[1:n,6]
         mismatch_max = [max(abs(mismatch_P)), max(abs(mismatch_Q))]
         iteration += 1
+    
+    """Final add to convergency history"""
+    iteration_list.append(iteration)        
+    bus_P, = np.where(mismatch_P == max(abs(mismatch_P)))
+    if len(bus_P) == 0:
+        bus_P, = np.where(mismatch_P == -1*max(abs(mismatch_P)))
+    max_P_bus.append(int(bus_P+2))
+    bus_Q, = np.where(mismatch_Q == max(abs(mismatch_Q)))
+    if len(bus_Q) == 0:
+        bus_Q, = np.where(mismatch_Q == -1*max(abs(mismatch_Q)))
+    max_Q_bus.append(int(bus_Q+2))
+    mismatch_P_list.append(max(abs(mismatch_P)))
+    mismatch_Q_list.append(max(abs(mismatch_Q)))
     
     """Export final solution to excel file"""
     DataOutput(Output_FileName, sys_Data, df_LineData, sys_Y,iteration_list,mismatch_P_list,mismatch_Q_list,max_P_bus,max_Q_bus)
