@@ -82,14 +82,15 @@ Takes in sys_:
     BusType - type of bus<(S)lack, (G)enerator, (D)rain>
     PGen - Active Power produced by each generator node
     VRef - Reference voltages at PV busses
-Returns a 2D array containing each node's current information
-[0] - Bus #
-[1] - Voltage (V)
-[2] - Angle (T)
-[3] - Active Power (P_inj)
-[4] - P(T,V)-P_inj (mismatch)
-[5] - Reactive Power (Q_inj)
-[6] - Q(T,V)-Q_inj (mismatch)
+Returns a 2D array containing each buses's current information
+[i,:] - Bus i's information
+[:,0] - Bus #
+[:,1] - Voltage (V)
+[:,2] - Angle (T)
+[:,3] - Active Power (P_inj)
+[:,4] - P(T,V)-P_inj (mismatch)
+[:,5] - Reactive Power (Q_inj)
+[:,6] - Q(T,V)-Q_inj (mismatch)
 """
 def init_SysData(sys_BusNum, sys_LoadP, sys_LoadQ, sys_BusType, sys_PGen, sys_VRef, sys_G, sys_B, S_Base):
     n= sys_LoadP.size
@@ -263,12 +264,12 @@ def PowerFlow (V_i,T_i,V_j,T_j,B_tot,y_ij):
 """
 Takes in matrices sys_Data, LineData, and sys_Y
 Returns lists:
-[0] - i Bus # (i_buses)
-[1] - j Bus # (j_buses)
-[2] - Apparent Power (S_ij)
-[3] - Active Power (P_ij)
-[4] - Reactive Power (Q_ij)
-[5] - Violation Occurrence (violation)
+i Bus # (i_buses)
+j Bus # (j_buses)
+ Apparent Power (S_ij)
+Active Power (P_ij)
+Reactive Power (Q_ij)
+Violation Occurrence (violation)
 """
 def LineFlowResults (sys_Data, LineData, sys_Y):
     LD_val = LineData.values
@@ -302,13 +303,13 @@ def LineFlowResults (sys_Data, LineData, sys_Y):
 """
 Collects needed bus data from sys_Data
 Returns lists:
-[0] - Bus Number (bus_nums) 
-[1] - Bus Voltages (bus_v)
-[2] - Bus Thetas (bus_deg)
-[3] - Bus Active Power (bus_p)
-[4] - Bus Reactive Power (bus_q)
-[5] - Reactive Power (Q_ij)
-[6] - Voltage Violation Occurrence (V_violate)
+Bus Number (bus_nums) 
+Bus Voltages (bus_v)
+Bus Thetas (bus_deg)
+Bus Active Power (bus_p)
+Bus Reactive Power (bus_q)
+Reactive Power (Q_ij)
+Voltage Violation Occurrence (V_violate)
 """
 def BusResults(sys_Data):
     V_violate = []

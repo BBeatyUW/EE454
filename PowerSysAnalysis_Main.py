@@ -16,9 +16,6 @@ from PowerSysAnalysis_HeaderFile import *
 Loction for Bus and line data
 First variable is for file location, Second variable is for sheet name
 """
-#BusData_Sample = ['.\Sample System\system_SampleInput.xlsx', 'BusData'] #Sample Data
-#LineData_Sample = ['.\Sample System\system_SampleInput.xlsx', 'LineData'] #Sample Data
-#Output_Sample = "SampleData"
 BusData_Location = ['system_basecase.xlsx', 'BusData'] #BaseCase Data
 LineData_Location_BaseCase = ['system_basecase.xlsx', 'LineData'] #BaseCase Data
 LineData_Location_Contingency1 = ['system_basecase.xlsx', 'ContingencyCase1'] #BaseCase Data
