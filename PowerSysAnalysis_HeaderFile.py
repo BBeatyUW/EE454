@@ -248,7 +248,11 @@ def update_SysData(sys_Data, sys_G, sys_B, sys_BusType):
 
 
 """
-Returns Appearent, real, and reactive power flowing a line.
+Takes in voltage and theta values, shunt capacitance, and the admittance matrix
+Returns Power Values:
+S_ij - Apparent Power
+P_ij - Real Power
+Q_ij - Reactive Power
 """
 def PowerFlow (V_i,T_i,V_j,T_j,B_tot,y_ij):
     I_ij = y_ij * (V_i * np.cos(T_i) + 1j * V_i * np.sin(T_i) - V_j * np.cos(T_j) - 1j * V_j
@@ -256,16 +260,15 @@ def PowerFlow (V_i,T_i,V_j,T_j,B_tot,y_ij):
     S_ij = (V_i*np.cos(T_i)+1j*V_i*np.sin(T_i)) * (I_ij.conjugate())
     return abs(S_ij), S_ij.real, S_ij.imag
 
-
 """
-This fuction collects all the needed line data and turns it into lists for exporting.
-LD_val is a matrix made from the dataframe that is given.
-S_ij is a list that stores all the apparent power flowing in the line (s_ij)
-P_ij is a list that stores all the apparent power flowing in the line (p_ij)
-Q_ij is a list that stores all the apparent power flowing in the line (q_ij)
-i_buses is a list of the buses that are used as a starting point
-j_buses is a list of the buses that are used as an ending point
-violataion list stores whether the line power limit was violated or not
+Takes in matrices sys_Data, LineData, and sys_Y
+Returns lists:
+[0] - i Bus # (i_buses)
+[1] - j Bus # (j_buses)
+[2] - Apparent Power (S_ij)
+[3] - Active Power (P_ij)
+[4] - Reactive Power (Q_ij)
+[5] - Violation Occurrence (violation)
 """
 def LineFlowResults (sys_Data, LineData, sys_Y):
     LD_val = LineData.values
@@ -298,7 +301,15 @@ def LineFlowResults (sys_Data, LineData, sys_Y):
     return S_ij, P_ij, Q_ij, violation, i_buses, j_buses
 
 """
-This fuction collects all the needed bus data and turns it into lists for exporting.
+Collects needed bus data from sys_Data
+Returns lists:
+[0] - Bus Number (bus_nums) 
+[1] - Bus Voltages (bus_v)
+[2] - Bus Thetas (bus_deg)
+[3] - Bus Active Power (bus_p)
+[4] - Bus Reactive Power (bus_q)
+[5] - Reactive Power (Q_ij)
+[6] - Voltage Violation Occurrence (V_violate)
 """
 def BusResults(sys_Data):
     V_violate = []
@@ -315,7 +326,15 @@ def BusResults(sys_Data):
     return bus_nums.astype(int), bus_v, bus_deg, bus_p, bus_q, V_violate
 
 """
-This function collects all the data obtained and outputs it to a single excel file with multiple sheets.
+Collects the filename, sys_Data, LineData, sys_Y, list of iterations, lists of max P mismatches and it's bus number,
+lists of max q mismatches and it's bus number
+Creates excel file with the given file name and given sheetnames:
+[0] - BusData - Data of each bus
+[1] - LineData - Data of the line between buses
+[2] - ConvergenceHistory - History of Convergence
+[3] - Y_matrix(Admittance) - Admittance matrix
+[4] - G_matrix - Real part of the Admittance matrix
+[5] - B_matrix - Imag. part of the Admittance matrix
 """
 def DataOutput(FileName, sys_Data, LineData, sys_Y, iteration_list, mismatch_P_list, mismatch_Q_list, max_P_bus, max_Q_bus):
 
